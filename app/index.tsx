@@ -2,7 +2,15 @@ import { FontAwesome } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { extractTextFromImage } from "expo-text-extractor";
 import { useRef, useState } from "react";
-import { Button, Image, Modal, Pressable, Text, View } from "react-native";
+import {
+  Button,
+  Image,
+  Modal,
+  Pressable,
+  Text,
+  View,
+  TextInput,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 function ErrorModal({ text }: { text: string | null }) {
@@ -35,6 +43,7 @@ export default function Index() {
   const ref = useRef<CameraView>(null);
   const [uri, setUri] = useState<string | undefined>(undefined);
   const [errorText, setErrorText] = useState<string | null>(null);
+  const [inputShown, setInputShown] = useState(false);
 
   if (!permission) {
     console.log(!permission);
@@ -61,11 +70,11 @@ export default function Index() {
       const text = await extractTextFromImage(photo.uri);
       const snLine = text.find((string) => string.includes("SN"));
       const serialNumber = snLine?.match(
-        /(?<=SN.\s)(5CG|5CD|CND|CNC|CZC|SCG|SCD).{7}/gm
+        /(?<=SN.\s)(5CG|5CD|CND|CNC|CZC|SCG|SCD|CNU|8CC|2CE).{7}/gm
       );
       if (serialNumber) {
         if (serialNumber[0] === "S") serialNumber[0] = "5";
-        //TODO: implement requesting bios password from LMP
+        setInputShown(true);
       } else {
         setErrorText("Could not read serial number");
         setUri(undefined);
@@ -87,6 +96,30 @@ export default function Index() {
       >
         <Image source={{ uri }} style={{ width: 300, aspectRatio: 1 }} />
         <Button onPress={() => setUri(undefined)} title="Retake" />
+        {inputShown && (
+          <>
+            <TextInput
+              style={{
+                backgroundColor: "white",
+                width: 200,
+                borderRadius: 8,
+                paddingHorizontal: 10,
+                height: 40,
+                textAlignVertical: "center",
+                paddingVertical: 0,
+                color: "#000",
+              }}
+              placeholder="Klantcode"
+            />
+            <Pressable
+              onPress={() => {
+                //TODO: lmp connection
+              }}
+            >
+              <Text style={{ color: "#fff" }}>Verzend</Text>
+            </Pressable>
+          </>
+        )}
       </View>
     );
   };
