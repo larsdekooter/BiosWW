@@ -16,6 +16,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "package": "com.ldekooter.BiosWW",
       "edgeToEdgeEnabled": true,
       "package": "com.ldekooter.BiosWW"
     },
