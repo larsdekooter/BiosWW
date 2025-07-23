@@ -5,12 +5,13 @@ import { useRef, useState } from "react";
 import {
   Button,
   Image,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   Text,
-  View,
   TextInput,
-  KeyboardAvoidingView,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -45,9 +46,9 @@ export default function Index() {
   const [uri, setUri] = useState<string | undefined>(undefined);
   const [errorText, setErrorText] = useState<string | null>(null);
   const [serialNumber, setSerialNumber] = useState<string | null>(null);
+  const [customer, setCustomer] = useState<string | null>(null);
 
   if (!permission) {
-    console.log(!permission);
     return <View />;
   }
 
@@ -72,9 +73,9 @@ export default function Index() {
       const snLine = text.find((string) => string.includes("SN"));
       const serialN = snLine?.match(
         /(?<=SN.\s)(5CG|5CD|CND|CNC|CZC|SCG|SCD|CNU|8CC|2CE).{7}/gm
-      );
+      )?.[0];
       if (serialN) {
-        if (serialN[0] === "S") serialN[0] = "5";
+        if (serialN[0] === "S") `5${serialN.substring(1)}`;
         setSerialNumber(serialN);
       } else {
         setErrorText("Could not read serial number");
@@ -95,16 +96,29 @@ export default function Index() {
           alignItems: "center",
           justifyContent: "center",
         }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <Text style={{ color: "#fff" }}>{serialNumber}</Text>
-        <Image source={{ uri }} style={{ width: 300, aspectRatio: 1 }} />
-        <Button
+        <Text style={{ color: "#fff", paddingVertical: 5 }}>
+          {serialNumber}
+        </Text>
+        <Image
+          source={{ uri }}
+          style={{ width: 300, aspectRatio: 1, paddingVertical: 5 }}
+        />
+        <Pressable
           onPress={() => {
             setUri(undefined);
             setSerialNumber(null);
           }}
-          title="Retake"
-        />
+          style={{
+            padding: 5,
+            backgroundColor: "#ff8700",
+            margin: 5,
+            borderRadius: 10,
+          }}
+        >
+          <Text style={{ color: "#fff" }}>Retake</Text>
+        </Pressable>
         {typeof serialNumber === "string" && (
           <>
             <TextInput
@@ -115,14 +129,22 @@ export default function Index() {
                 paddingHorizontal: 10,
                 height: 40,
                 textAlignVertical: "center",
-                paddingVertical: 0,
+                paddingVertical: 5,
                 color: "#000",
               }}
               placeholder="Klantcode"
+              onChangeText={(input) => setCustomer(input ?? null)}
             />
             <Pressable
+              style={{
+                padding: 5,
+                backgroundColor: "#ff8700",
+                margin: 5,
+                borderRadius: 10,
+              }}
               onPress={() => {
                 //TODO: lmp connection
+                console.log(customer);
               }}
             >
               <Text style={{ color: "#fff" }}>Verzend</Text>
