@@ -78,6 +78,7 @@ export default function Index() {
         setSerialNumber(serialN);
       } else {
         setErrorText("Could not read serial number");
+        setSerialNumber(null);
         setUri(undefined);
         setTimeout(() => {
           setErrorText(null);
@@ -97,7 +98,13 @@ export default function Index() {
       >
         <Text style={{ color: "#fff" }}>{serialNumber}</Text>
         <Image source={{ uri }} style={{ width: 300, aspectRatio: 1 }} />
-        <Button onPress={() => setUri(undefined)} title="Retake" />
+        <Button
+          onPress={() => {
+            setUri(undefined);
+            setSerialNumber(null);
+          }}
+          title="Retake"
+        />
         {typeof serialNumber === "string" && (
           <>
             <TextInput
