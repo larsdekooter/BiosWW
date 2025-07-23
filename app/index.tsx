@@ -10,6 +10,7 @@ import {
   Text,
   View,
   TextInput,
+  KeyboardAvoidingView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -43,7 +44,7 @@ export default function Index() {
   const ref = useRef<CameraView>(null);
   const [uri, setUri] = useState<string | undefined>(undefined);
   const [errorText, setErrorText] = useState<string | null>(null);
-  const [inputShown, setInputShown] = useState(false);
+  const [serialNumber, setSerialNumber] = useState<string | null>(null);
 
   if (!permission) {
     console.log(!permission);
@@ -69,12 +70,12 @@ export default function Index() {
       setUri(photo.uri);
       const text = await extractTextFromImage(photo.uri);
       const snLine = text.find((string) => string.includes("SN"));
-      const serialNumber = snLine?.match(
+      const serialN = snLine?.match(
         /(?<=SN.\s)(5CG|5CD|CND|CNC|CZC|SCG|SCD|CNU|8CC|2CE).{7}/gm
       );
-      if (serialNumber) {
-        if (serialNumber[0] === "S") serialNumber[0] = "5";
-        setInputShown(true);
+      if (serialN) {
+        if (serialN[0] === "S") serialN[0] = "5";
+        setSerialNumber(serialN);
       } else {
         setErrorText("Could not read serial number");
         setUri(undefined);
@@ -86,7 +87,7 @@ export default function Index() {
   };
   const renderPicture = () => {
     return (
-      <View
+      <KeyboardAvoidingView
         style={{
           flex: 1,
           backgroundColor: "#181c20",
@@ -94,9 +95,10 @@ export default function Index() {
           justifyContent: "center",
         }}
       >
+        <Text style={{ color: "#fff" }}>{serialNumber}</Text>
         <Image source={{ uri }} style={{ width: 300, aspectRatio: 1 }} />
         <Button onPress={() => setUri(undefined)} title="Retake" />
-        {inputShown && (
+        {typeof serialNumber === "string" && (
           <>
             <TextInput
               style={{
@@ -120,7 +122,7 @@ export default function Index() {
             </Pressable>
           </>
         )}
-      </View>
+      </KeyboardAvoidingView>
     );
   };
   const renderCamera = () => {
