@@ -17,8 +17,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.ldekooter.BiosWW",
-      "edgeToEdgeEnabled": true,
-      "package": "com.ldekooter.BiosWW"
+      "edgeToEdgeEnabled": true
     },
     "web": {
       "bundler": "metro",
@@ -40,6 +39,12 @@
     "experiments": {
       "typedRoutes": true
     },
-    "owner": "ldekooter"
+    "owner": "ldekooter",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "273a69f6-90ab-40d8-8062-c62514153d6e"
+      }
+    }
   }
 }
