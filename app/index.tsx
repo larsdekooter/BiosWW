@@ -1,6 +1,7 @@
 import { FontAwesome } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { extractTextFromImage } from "expo-text-extractor";
+import { fetch } from "expo/fetch";
 import { useRef, useState } from "react";
 import {
   Button,
@@ -142,9 +143,19 @@ export default function Index() {
                 margin: 5,
                 borderRadius: 10,
               }}
-              onPress={() => {
-                //TODO: lmp connection
-                console.log(customer);
+              onPress={async () => {
+                if (!customer) return; //TODO: Implement error message here
+                // Request from n8n (Proxsys goes n8n???)
+                const response = await fetch(
+                  "http://192.168.1.17:5678/webhook/1653088f-94d9-4919-b763-d5f66870c30a",
+                  {
+                    headers: {
+                      customer,
+                      serialNumber,
+                      // Accestoken
+                    },
+                  }
+                ).then((res) => res.json());
               }}
             >
               <Text style={{ color: "#fff" }}>Verzend</Text>
