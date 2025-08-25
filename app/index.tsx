@@ -1,8 +1,9 @@
+import { requestPermissions } from "@/useBLE";
 import { FontAwesome } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { extractTextFromImage } from "expo-text-extractor";
 import { fetch } from "expo/fetch";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Button,
   Image,
@@ -14,6 +15,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { BleManager, Device } from "react-native-ble-plx";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 function ErrorModal({ text }: { text: string | null }) {
@@ -41,25 +43,75 @@ function ErrorModal({ text }: { text: string | null }) {
   );
 }
 
+const isDuplicteDevice = (devices: Device[], nextDevice: Device) =>
+  devices.findIndex((device) => nextDevice.id === device.id) > -1;
+
 export default function Index() {
-  const [permission, requestPermission] = useCameraPermissions();
+  requestPermissions();
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const ref = useRef<CameraView>(null);
   const [uri, setUri] = useState<string | undefined>(undefined);
   const [errorText, setErrorText] = useState<string | null>(null);
   const [serialNumber, setSerialNumber] = useState<string | null>(null);
   const [customer, setCustomer] = useState<string | null>(null);
+  const [allDevices, setAllDevices] = useState<Device[]>([]);
+  const [isError, setIsError] = useState(false);
 
-  if (!permission) {
+  useEffect(() => {
+    (async () => {
+      const bleManager = new BleManager();
+      if (!(allDevices.length > 1)) {
+        await bleManager.startDeviceScan(null, null, (error, device) => {
+          if (error) {
+            console.error("Device scan error: ", error);
+            // setIsError(!isError);
+          }
+
+          if (device && device.name?.includes("BIOS")) {
+            setAllDevices((prevState: Device[]) => {
+              if (!isDuplicteDevice(prevState, device)) {
+                return [...prevState, device];
+              }
+              return prevState;
+            });
+          }
+        });
+      }
+      if (allDevices.length > 0) {
+        const device = allDevices[0];
+        console.log(device.id);
+        if (!device.isConnected()) {
+          await device
+            .connect()
+            .catch((error) => console.error("Connection error: ", error));
+        }
+        console.log(
+          "DEVICE IS CONNECTED NOW",
+          await bleManager.isDeviceConnected(device.id),
+          await device.isConnected()
+        );
+        await device
+          .writeCharacteristicWithResponseForService(
+            "0000180a-0000-1000-8000-00805f9b34fb",
+            "2A57",
+            "5C2uyjr!&?m8Zwha"
+          )
+          .then(console.log);
+      }
+    })();
+  });
+
+  if (!cameraPermission) {
     return <View />;
   }
 
-  if (!permission.granted) {
+  if (!cameraPermission.granted) {
     return (
       <View style={{ flex: 1, justifyContent: "center" }}>
         <Text style={{ textAlign: "center", paddingBottom: 10 }}>
           We need your permission to show the camera
         </Text>
-        <Button onPress={requestPermission} title="grant permission" />
+        <Button onPress={requestCameraPermission} title="grant permission" />
       </View>
     );
   }
@@ -176,6 +228,21 @@ export default function Index() {
         }}
       >
         <View style={{ height: 90 }}></View>
+        <TextInput
+          style={[
+            {
+              backgroundColor: "white",
+              width: 200,
+              borderRadius: 8,
+              paddingHorizontal: 10,
+              height: 40,
+
+              textAlignVertical: "center",
+              paddingVertical: 0,
+              color: "#000",
+            },
+          ]}
+        />
         <CameraView
           style={{ width: "80%", height: "10%", borderRadius: 10 }}
           ref={ref}
@@ -220,3 +287,9 @@ export default function Index() {
     </SafeAreaView>
   );
 }
+
+const wait = (duration: number) => {
+  return new Promise((resolve, reject) => {
+    setTimeout(resolve, duration);
+  });
+};
