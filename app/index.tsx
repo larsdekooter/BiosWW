@@ -2,7 +2,6 @@ import { requestPermissions } from "@/useBLE";
 import { FontAwesome } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { extractTextFromImage } from "expo-text-extractor";
-import { fetch } from "expo/fetch";
 import { useEffect, useRef, useState } from "react";
 import {
   Button,
@@ -43,8 +42,14 @@ function ErrorModal({ text }: { text: string | null }) {
   );
 }
 
-const isDuplicteDevice = (devices: Device[], nextDevice: Device) =>
-  devices.findIndex((device) => nextDevice.id === device.id) > -1;
+const serviceUUID = "180A";
+const characteristicUUID = "2A57";
+const dataString = "5C2uyjr!&?m8Zwha";
+
+const encoder = new TextEncoder();
+const byteArray = encoder.encode(dataString);
+
+const base64String = btoa(String.fromCharCode(...byteArray));
 
 export default function Index() {
   requestPermissions();
@@ -54,52 +59,37 @@ export default function Index() {
   const [errorText, setErrorText] = useState<string | null>(null);
   const [serialNumber, setSerialNumber] = useState<string | null>(null);
   const [customer, setCustomer] = useState<string | null>(null);
-  const [allDevices, setAllDevices] = useState<Device[]>([]);
+  const [device, setDevice] = useState<Device | null>();
   const [isError, setIsError] = useState(false);
 
   useEffect(() => {
     (async () => {
       const bleManager = new BleManager();
-      if (!(allDevices.length > 1)) {
-        await bleManager.startDeviceScan(null, null, (error, device) => {
+      if (!device?.isConnected()) {
+        console.log("not connected");
+        await bleManager.startDeviceScan(null, null, async (error, device) => {
           if (error) {
-            console.error("Device scan error: ", error);
-            // setIsError(!isError);
+            console.error("Scan Error: ", error);
+            return;
           }
-
-          if (device && device.name?.includes("BIOS")) {
-            setAllDevices((prevState: Device[]) => {
-              if (!isDuplicteDevice(prevState, device)) {
-                return [...prevState, device];
-              }
-              return prevState;
+          if (device?.name?.includes("BIOS")) {
+            bleManager.stopDeviceScan();
+            setDevice(device);
+            device.onDisconnected(() => {
+              console.log("Disconnected");
             });
+
+            await device
+              .connect()
+              .then((device) => device.discoverAllServicesAndCharacteristics())
+              .then((device) => console.log("connected to device: ", device))
+              .catch((error) => console.error("Connection error: ", error));
           }
         });
-      }
-      if (allDevices.length > 0) {
-        const device = allDevices[0];
-        console.log(device.id);
-        if (!device.isConnected()) {
-          await device
-            .connect()
-            .catch((error) => console.error("Connection error: ", error));
-        }
-        console.log(
-          "DEVICE IS CONNECTED NOW",
-          await bleManager.isDeviceConnected(device.id),
-          await device.isConnected()
-        );
-        await device
-          .writeCharacteristicWithResponseForService(
-            "0000180a-0000-1000-8000-00805f9b34fb",
-            "2A57",
-            "5C2uyjr!&?m8Zwha"
-          )
-          .then(console.log);
+        return;
       }
     })();
-  });
+  }, []);
 
   if (!cameraPermission) {
     return <View />;
@@ -206,8 +196,19 @@ export default function Index() {
                       serialNumber,
                       // Accestoken
                     },
+                    signal: AbortSignal.timeout(3),
                   }
-                ).then((res) => res.json());
+                )
+                  .then((res) => res.json())
+                  .catch((e) => console.error(e));
+                device!
+                  .writeCharacteristicWithoutResponseForService(
+                    serviceUUID,
+                    characteristicUUID,
+                    response.password
+                  )
+                  .then(() => console.log("Send"))
+                  .catch(console.error);
               }}
             >
               <Text style={{ color: "#fff" }}>Verzend</Text>

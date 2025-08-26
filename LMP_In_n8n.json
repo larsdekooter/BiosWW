@@ -1,0 +1,96 @@
+{
+  "name": "LMP imitation",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "1653088f-94d9-4919-b763-d5f66870c30a",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "6918dc59-3a0b-4f4a-8c8f-96703d244465",
+      "name": "Webhook",
+      "webhookId": "1653088f-94d9-4919-b763-d5f66870c30a"
+    },
+    {
+      "parameters": {
+        "jsCode": "const dataString = \"zdy4Fe@5p3btJ?r*\";\n\nconst base64String = Buffer.from(dataString, 'utf8').toString('base64');\n\n\nif ($input.all()[0].json.headers.customer.toLowerCase() === 'joul1') return {password: base64String}\nelse return {password: \"Secret belongs to another customer\"}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "b6c60b39-d62a-4a09-95e4-2c0ae88ef14c",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        448,
+        0
+      ],
+      "id": "421974c2-857e-406e-8522-cf3e8a082d0f",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Amsterdam",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "9b9c861d-fb9c-49ad-b4f9-5e22002ab72a",
+  "meta": {
+    "instanceId": "08c607174008a3b628fd164e39ccfdce7f6f7745e48071dd230feb6fafefbccf"
+  },
+  "id": "1eMLtJuUwy3TeLuT",
+  "tags": [
+    {
+      "createdAt": "2025-08-13T17:17:00.163Z",
+      "updatedAt": "2025-08-13T17:17:00.163Z",
+      "id": "03iNATYsAsZf2UeH",
+      "name": "Proxsys*"
+    }
+  ]
+}
