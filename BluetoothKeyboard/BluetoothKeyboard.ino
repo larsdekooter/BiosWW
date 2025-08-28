@@ -53,7 +53,7 @@ void loop() {
     analogWrite(LED_GREEN, 255);
     analogWrite(LED_BLUE, 200);
 
-    while (central.connected()) {hjgbrK?6Mcz23a
+    while (central.connected()) {
 
       if (createChar.written()) {
         String value = createChar.value();

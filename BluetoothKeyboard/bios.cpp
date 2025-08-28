@@ -49,9 +49,9 @@ static bool ascii_to_hid(char c, uint8_t *out_mod, uint8_t *out_key)
     case '\n': *out_key = 0x28; return true; // Enter
     case '\r': *out_key = 0x28; return true; // Enter
     case '\b': *out_key = 0x2A; return true; // Backspace
-    case '-': *out_key = 0x2D; return true; // minus
-    case '_': *out_mod = (1<<1); *out_key = 0x2D; return true; // Shift + minus
-    case '=': *out_key = 0x2E; return true; // equal
+    case '-': *out_key = 0x2D; return true; 
+    case '_': *out_mod = (1<<1); *out_key = 0x2D; return true; 
+    case '=': *out_key = 0x2E; return true; 
     case '+': *out_mod = (1<<1); *out_key = 0x2E; return true;
     case '[': *out_key = 0x2F; return true;
     case '{': *out_mod = (1<<1); *out_key = 0x2F; return true;
@@ -71,9 +71,20 @@ static bool ascii_to_hid(char c, uint8_t *out_mod, uint8_t *out_key)
     case '>': *out_mod = (1<<1); *out_key = 0x37; return true;
     case '/': *out_key = 0x38; return true;
     case '?': *out_mod = (1<<1); *out_key = 0x38; return true;
+    case '!': *out_mod = (1<<1); *out_key = 0x1E; return true; // Shift + 1
+    case '@': *out_mod = (1<<1); *out_key = 0x1F; return true; // Shift + 2
+    case '#': *out_mod = (1<<1); *out_key = 0x20; return true; // Shift + 3
+    case '$': *out_mod = (1<<1); *out_key = 0x21; return true; // Shift + 4 
+    case '%': *out_mod = (1<<1); *out_key = 0x22; return true; // Shift + 5
+    case '^': *out_mod = (1<<1); *out_key = 0x23; return true; // Shift + 6
+    case '&': *out_mod = (1<<1); *out_key = 0x24; return true; // Shift + 7
+    case '*': *out_mod = (1<<1); *out_key = 0x25; return true; // Shift + 8
+    case '(': *out_mod = (1<<1); *out_key = 0x26; return true; // Shift + 9
+    case ')': *out_mod = (1<<1); *out_key = 0x27; return true; // Shift + 0
+    
     default:
-      return false;
-  }
+        return false;
+}
 }
 
 // Wait until TinyUSB HID is ready for a report (non-blocking busy-wait).
