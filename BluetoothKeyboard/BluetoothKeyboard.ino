@@ -58,6 +58,7 @@ void loop() {
       if (createChar.written()) {
         String value = createChar.value();
         bios_print(value.c_str());
+        bios_print("\n");
       }
     }
 
