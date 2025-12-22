@@ -188,24 +188,24 @@ export default function Index() {
               onPress={async () => {
                 if (!customer) return; //TODO: Implement error message here
                 // Request from n8n (Proxsys goes n8n???)
-                const response = await fetch(
-                  "http://192.168.1.17:5678/webhook/1653088f-94d9-4919-b763-d5f66870c30a",
-                  {
-                    headers: {
-                      customer,
-                      serialNumber,
-                      // Accestoken
-                    },
-                    signal: AbortSignal.timeout(3),
-                  }
-                )
-                  .then((res) => res.json())
-                  .catch((e) => console.error(e));
+                // const response = await fetch(
+                //   "http://192.168.1.17:5678/webhook/1653088f-94d9-4919-b763-d5f66870c30a",
+                //   {
+                //     headers: {
+                //       customer,
+                //       serialNumber,
+                //       // Accestoken
+                //     },
+                //     signal: AbortSignal.timeout(3),
+                //   }
+                // )
+                //   .then((res) => res.json())
+                //   .catch((e) => console.error(e));
                 device!
                   .writeCharacteristicWithoutResponseForService(
                     serviceUUID,
                     characteristicUUID,
-                    response.password
+                    "Test"
                   )
                   .then(() => console.log("Send"))
                   .catch(console.error);
