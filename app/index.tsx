@@ -1,7 +1,8 @@
+import { requestPermissions } from "@/useBLE";
 import { FontAwesome } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { extractTextFromImage } from "expo-text-extractor";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Button,
   Image,
@@ -13,6 +14,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { BleManager, Device } from "react-native-ble-plx";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 function ErrorModal({ text }: { text: string | null }) {
@@ -40,25 +42,66 @@ function ErrorModal({ text }: { text: string | null }) {
   );
 }
 
+const serviceUUID = "180A";
+const characteristicUUID = "2A57";
+const dataString = "5C2uyjr!&?m8Zwha";
+
+const encoder = new TextEncoder();
+const byteArray = encoder.encode(dataString);
+
+const base64String = btoa(String.fromCharCode(...byteArray));
+
 export default function Index() {
-  const [permission, requestPermission] = useCameraPermissions();
+  requestPermissions();
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const ref = useRef<CameraView>(null);
   const [uri, setUri] = useState<string | undefined>(undefined);
   const [errorText, setErrorText] = useState<string | null>(null);
   const [serialNumber, setSerialNumber] = useState<string | null>(null);
   const [customer, setCustomer] = useState<string | null>(null);
+  const [device, setDevice] = useState<Device | null>();
+  const [isError, setIsError] = useState(false);
 
-  if (!permission) {
+  useEffect(() => {
+    (async () => {
+      const bleManager = new BleManager();
+      if (!device?.isConnected()) {
+        console.log("not connected");
+        await bleManager.startDeviceScan(null, null, async (error, device) => {
+          if (error) {
+            console.error("Scan Error: ", error);
+            return;
+          }
+          if (device?.name?.includes("BIOS")) {
+            bleManager.stopDeviceScan();
+            setDevice(device);
+            device.onDisconnected(() => {
+              console.log("Disconnected");
+            });
+
+            await device
+              .connect()
+              .then((device) => device.discoverAllServicesAndCharacteristics())
+              .then((device) => console.log("connected to device: ", device))
+              .catch((error) => console.error("Connection error: ", error));
+          }
+        });
+        return;
+      }
+    })();
+  }, []);
+
+  if (!cameraPermission) {
     return <View />;
   }
 
-  if (!permission.granted) {
+  if (!cameraPermission.granted) {
     return (
       <View style={{ flex: 1, justifyContent: "center" }}>
         <Text style={{ textAlign: "center", paddingBottom: 10 }}>
           We need your permission to show the camera
         </Text>
-        <Button onPress={requestPermission} title="grant permission" />
+        <Button onPress={requestCameraPermission} title="grant permission" />
       </View>
     );
   }
@@ -142,9 +185,30 @@ export default function Index() {
                 margin: 5,
                 borderRadius: 10,
               }}
-              onPress={() => {
-                //TODO: lmp connection
-                console.log(customer);
+              onPress={async () => {
+                if (!customer) return; //TODO: Implement error message here
+                // Request from n8n (Proxsys goes n8n???)
+                // const response = await fetch(
+                //   "http://192.168.1.17:5678/webhook/1653088f-94d9-4919-b763-d5f66870c30a",
+                //   {
+                //     headers: {
+                //       customer,
+                //       serialNumber,
+                //       // Accestoken
+                //     },
+                //     signal: AbortSignal.timeout(3),
+                //   }
+                // )
+                //   .then((res) => res.json())
+                //   .catch((e) => console.error(e));
+                device!
+                  .writeCharacteristicWithoutResponseForService(
+                    serviceUUID,
+                    characteristicUUID,
+                    "Test"
+                  )
+                  .then(() => console.log("Send"))
+                  .catch(console.error);
               }}
             >
               <Text style={{ color: "#fff" }}>Verzend</Text>
@@ -165,6 +229,21 @@ export default function Index() {
         }}
       >
         <View style={{ height: 90 }}></View>
+        <TextInput
+          style={[
+            {
+              backgroundColor: "white",
+              width: 200,
+              borderRadius: 8,
+              paddingHorizontal: 10,
+              height: 40,
+
+              textAlignVertical: "center",
+              paddingVertical: 0,
+              color: "#000",
+            },
+          ]}
+        />
         <CameraView
           style={{ width: "80%", height: "10%", borderRadius: 10 }}
           ref={ref}
@@ -209,3 +288,9 @@ export default function Index() {
     </SafeAreaView>
   );
 }
+
+const wait = (duration: number) => {
+  return new Promise((resolve, reject) => {
+    setTimeout(resolve, duration);
+  });
+};
