@@ -2,6 +2,7 @@ import { requestPermissions } from "@/useBLE";
 import { FontAwesome } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { extractTextFromImage } from "expo-text-extractor";
+import * as WebBrowser from "expo-web-browser";
 import { useEffect, useRef, useState } from "react";
 import {
   Button,
@@ -16,6 +17,8 @@ import {
 } from "react-native";
 import { BleManager, Device } from "react-native-ble-plx";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+WebBrowser.maybeCompleteAuthSession();
 
 function ErrorModal({ text }: { text: string | null }) {
   return (
@@ -44,12 +47,6 @@ function ErrorModal({ text }: { text: string | null }) {
 
 const serviceUUID = "180A";
 const characteristicUUID = "2A57";
-const dataString = "5C2uyjr!&?m8Zwha";
-
-const encoder = new TextEncoder();
-const byteArray = encoder.encode(dataString);
-
-const base64String = btoa(String.fromCharCode(...byteArray));
 
 export default function Index() {
   requestPermissions();
