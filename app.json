@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "biosww",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
@@ -16,8 +15,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.ldekooter.BiosWW",
-      "edgeToEdgeEnabled": true
+      "package": "com.ldekooter.BiosWW"
     },
     "web": {
       "bundler": "metro",
@@ -48,7 +46,9 @@
       ],
       "expo-font",
       "expo-web-browser",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-image",
+      "expo-status-bar"
     ],
     "experiments": {
       "typedRoutes": true
