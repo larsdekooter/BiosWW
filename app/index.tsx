@@ -1,10 +1,12 @@
 import { requestPermissions } from "@/useBLE";
+import { useAuth } from "@clerk/clerk-expo";
+import { AuthView } from "@clerk/expo/native";
 import { FontAwesome } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { extractTextFromImage } from "expo-text-extractor";
-import * as WebBrowser from "expo-web-browser";
 import { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Button,
   Image,
   KeyboardAvoidingView,
@@ -17,8 +19,6 @@ import {
 } from "react-native";
 import { BleManager, Device } from "react-native-ble-plx";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-WebBrowser.maybeCompleteAuthSession();
 
 function ErrorModal({ text }: { text: string | null }) {
   return (
@@ -48,7 +48,25 @@ function ErrorModal({ text }: { text: string | null }) {
 const serviceUUID = "180A";
 const characteristicUUID = "2A57";
 
-export default function Index() {
+export default function MainScreen() {
+  const { isSignedIn, isLoaded } = useAuth({ treatPendingAsSignedOut: false });
+
+  if (!isLoaded) {
+    return (
+      <View style={{ justifyContent: "center", alignItems: "center", flex: 1 }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  if (!isSignedIn) {
+    return <AuthView mode="signUp" />;
+  }
+
+  return Index();
+}
+
+function Index() {
   requestPermissions();
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const ref = useRef<CameraView>(null);
@@ -112,7 +130,7 @@ export default function Index() {
       const text = await extractTextFromImage(photo.uri);
       const snLine = text.find((string) => string.includes("SN"));
       const serialN = snLine?.match(
-        /(?<=SN.\s)(5CG|5CD|CND|CNC|CZC|SCG|SCD|CNU|8CC|2CE).{7}/gm
+        /(?<=SN.\s)(5CG|5CD|CND|CNC|CZC|SCG|SCD|CNU|8CC|2CE).{7}/gm,
       )?.[0];
       if (serialN) {
         if (serialN[0] === "S") `5${serialN.substring(1)}`;
@@ -202,7 +220,7 @@ export default function Index() {
                   .writeCharacteristicWithoutResponseForService(
                     serviceUUID,
                     characteristicUUID,
-                    "Test"
+                    "Test",
                   )
                   .then(() => console.log("Send"))
                   .catch(console.error);
