@@ -1,6 +1,6 @@
 import { requestPermissions } from "@/useBLE";
-import { useAuth } from "@clerk/clerk-expo";
-import { AuthView } from "@clerk/expo/native";
+import { useAuth } from "@clerk/expo";
+import { AuthView, UserButton } from "@clerk/expo/native";
 import { FontAwesome } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { extractTextFromImage } from "expo-text-extractor";
@@ -48,25 +48,7 @@ function ErrorModal({ text }: { text: string | null }) {
 const serviceUUID = "180A";
 const characteristicUUID = "2A57";
 
-export default function MainScreen() {
-  const { isSignedIn, isLoaded } = useAuth({ treatPendingAsSignedOut: false });
-
-  if (!isLoaded) {
-    return (
-      <View style={{ justifyContent: "center", alignItems: "center", flex: 1 }}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  }
-
-  if (!isSignedIn) {
-    return <AuthView mode="signUp" />;
-  }
-
-  return Index();
-}
-
-function Index() {
+export default function Index() {
   requestPermissions();
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const ref = useRef<CameraView>(null);
@@ -76,6 +58,7 @@ function Index() {
   const [customer, setCustomer] = useState<string | null>(null);
   const [device, setDevice] = useState<Device | null>();
   const [isError, setIsError] = useState(false);
+  const { isSignedIn, isLoaded } = useAuth({ treatPendingAsSignedOut: false });
 
   useEffect(() => {
     (async () => {
@@ -105,7 +88,17 @@ function Index() {
       }
     })();
   }, []);
+  if (!isLoaded) {
+    return (
+      <View style={{ justifyContent: "center", alignItems: "center", flex: 1 }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
 
+  if (!isSignedIn) {
+    return <AuthView mode="signInOrUp" />;
+  }
   if (!cameraPermission) {
     return <View />;
   }
@@ -298,6 +291,18 @@ function Index() {
   };
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#181c20" }}>
+      <View
+        style={{
+          width: 44,
+          height: 44,
+          borderRadius: 22,
+          overflow: "hidden",
+          marginLeft: 10,
+          marginTop: 10,
+        }}
+      >
+        <UserButton />
+      </View>
       {uri ? renderPicture() : renderCamera()}
       <ErrorModal text={errorText} />
     </SafeAreaView>

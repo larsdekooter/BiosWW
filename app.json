@@ -48,8 +48,8 @@
       "expo-web-browser",
       "expo-secure-store",
       "expo-image",
-      "expo-status-bar",
-      "@clerk/expo"
+      "@clerk/expo",
+      "expo-status-bar"
     ],
     "experiments": {
       "typedRoutes": true
