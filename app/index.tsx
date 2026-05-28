@@ -13,6 +13,7 @@ import {
   Modal,
   Platform,
   Pressable,
+  PressableProps,
   Text,
   TextInput,
   View,
@@ -47,6 +48,38 @@ function ErrorModal({ text }: { text: string | null }) {
 
 const serviceUUID = "180A";
 const characteristicUUID = "2A57";
+const snPrefixes: string[] = [
+  "5CG",
+  "5CD",
+  "CND",
+  "CNC",
+  "CZC",
+  "SCG",
+  "SCD",
+  "CNU",
+  "8CC",
+  "2CE",
+];
+
+function ProxsysOrangeButton(props: PressableProps) {
+  return (
+    <Pressable
+      {...props}
+      style={(state) => [
+        {
+          paddingHorizontal: 20,
+          paddingVertical: 10,
+          backgroundColor: "#FF7D00",
+          margin: 5,
+          borderRadius: 3,
+        },
+        typeof props.style === "function" ? props.style(state) : props.style,
+      ]}
+    >
+      {props.children}
+    </Pressable>
+  );
+}
 
 export default function Index() {
   requestPermissions();
@@ -88,6 +121,7 @@ export default function Index() {
       }
     })();
   }, []);
+
   if (!isLoaded) {
     return (
       <View style={{ justifyContent: "center", alignItems: "center", flex: 1 }}>
@@ -121,13 +155,19 @@ export default function Index() {
     if (photo?.uri) {
       setUri(photo.uri);
       const text = await extractTextFromImage(photo.uri);
-      const snLine = text.find((string) => string.includes("SN"));
+      console.log(text);
+
+      const snLine = text.find(
+        (string) =>
+          string.includes("SN") || snPrefixes.includes(string.slice(0, 3)),
+      );
       const serialN = snLine?.match(
-        /(?<=SN.\s)(5CG|5CD|CND|CNC|CZC|SCG|SCD|CNU|8CC|2CE).{7}/gm,
+        /(5CG|5CD|CND|CNC|CZC|SCG|SCD|CNU|8CC|2CE).{7}/gm,
       )?.[0];
       if (serialN) {
-        if (serialN[0] === "S") `5${serialN.substring(1)}`;
-        setSerialNumber(serialN);
+        if (serialN[0] === "S")
+          return setSerialNumber(`5${serialN.substring(1)}`);
+        return setSerialNumber(serialN);
       } else {
         setErrorText("Could not read serial number");
         setSerialNumber(null);
@@ -149,27 +189,29 @@ export default function Index() {
         }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <Text style={{ color: "#fff", paddingVertical: 5 }}>
+        <Text style={{ color: "#fff", paddingVertical: 5, fontWeight: "bold" }}>
           {serialNumber}
         </Text>
         <Image
           source={{ uri }}
-          style={{ width: 300, aspectRatio: 1, paddingVertical: 5 }}
+          style={{
+            width: 300,
+            aspectRatio: 1,
+            paddingVertical: 5,
+            borderRadius: 6,
+          }}
         />
-        <Pressable
+        <ProxsysOrangeButton
           onPress={() => {
             setUri(undefined);
             setSerialNumber(null);
           }}
-          style={{
-            padding: 5,
-            backgroundColor: "#ff8700",
-            margin: 5,
-            borderRadius: 10,
-          }}
+          style={{ marginBottom: 100 }}
         >
-          <Text style={{ color: "#fff" }}>Retake</Text>
-        </Pressable>
+          <Text style={{ color: "#fff", fontWeight: "bold" }}>
+            Maak een nieuwe foto
+          </Text>
+        </ProxsysOrangeButton>
         {typeof serialNumber === "string" && (
           <>
             <TextInput
@@ -185,14 +227,9 @@ export default function Index() {
               }}
               placeholder="Klantcode"
               onChangeText={(input) => setCustomer(input ?? null)}
+              placeholderTextColor={"#3a3a3a"}
             />
-            <Pressable
-              style={{
-                padding: 5,
-                backgroundColor: "#ff8700",
-                margin: 5,
-                borderRadius: 10,
-              }}
+            <ProxsysOrangeButton
               onPress={async () => {
                 if (!customer) return; //TODO: Implement error message here
                 // Request from n8n (Proxsys goes n8n???)
@@ -209,6 +246,7 @@ export default function Index() {
                 // )
                 //   .then((res) => res.json())
                 //   .catch((e) => console.error(e));
+                console.log("HELLO");
                 device!
                   .writeCharacteristicWithoutResponseForService(
                     serviceUUID,
@@ -218,9 +256,10 @@ export default function Index() {
                   .then(() => console.log("Send"))
                   .catch(console.error);
               }}
+              disabled={device == null}
             >
-              <Text style={{ color: "#fff" }}>Verzend</Text>
-            </Pressable>
+              <Text style={{ color: "#fff", fontWeight: "bold" }}>Verzend</Text>
+            </ProxsysOrangeButton>
           </>
         )}
       </KeyboardAvoidingView>
@@ -236,22 +275,7 @@ export default function Index() {
           justifyContent: "space-between",
         }}
       >
-        <View style={{ height: 90 }}></View>
-        <TextInput
-          style={[
-            {
-              backgroundColor: "white",
-              width: 200,
-              borderRadius: 8,
-              paddingHorizontal: 10,
-              height: 40,
-
-              textAlignVertical: "center",
-              paddingVertical: 0,
-              color: "#000",
-            },
-          ]}
-        />
+        <View></View>
         <CameraView
           style={{ width: "80%", height: "10%", borderRadius: 10 }}
           ref={ref}
@@ -259,6 +283,7 @@ export default function Index() {
           facing="back"
           responsiveOrientationWhenOrientationLocked
           autofocus="on"
+          zoom={0.1}
         />
         <Pressable onPress={takePicture}>
           {({ pressed }) => (
