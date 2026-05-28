@@ -82,7 +82,9 @@ function ProxsysOrangeButton(props: PressableProps) {
 }
 
 export default function Index() {
+  // Request Bluetooth permissions to connect to Arduino ESP32 NANO
   requestPermissions();
+
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const ref = useRef<CameraView>(null);
   const [uri, setUri] = useState<string | undefined>(undefined);
@@ -91,8 +93,10 @@ export default function Index() {
   const [customer, setCustomer] = useState<string | null>(null);
   const [device, setDevice] = useState<Device | null>();
   const [isError, setIsError] = useState(false);
+  // Check if user is signed in
   const { isSignedIn, isLoaded } = useAuth({ treatPendingAsSignedOut: false });
 
+  // Connect to the Arduino NANO ESP32
   useEffect(() => {
     (async () => {
       const bleManager = new BleManager();
@@ -122,6 +126,7 @@ export default function Index() {
     })();
   }, []);
 
+  // When Clerk is still loading show a spinner
   if (!isLoaded) {
     return (
       <View style={{ justifyContent: "center", alignItems: "center", flex: 1 }}>
@@ -129,14 +134,17 @@ export default function Index() {
       </View>
     );
   }
-
+  // Log user in
   if (!isSignedIn) {
     return <AuthView mode="signInOrUp" />;
   }
+
+  // If the permissions are not loaded yet, show nothing. Should never happen because of isLoaded check
   if (!cameraPermission) {
     return <View />;
   }
 
+  // Button to grant camera permissions
   if (!cameraPermission.granted) {
     return (
       <View style={{ flex: 1, justifyContent: "center" }}>
@@ -147,6 +155,7 @@ export default function Index() {
       </View>
     );
   }
+
   const takePicture = async () => {
     const photo = await ref.current?.takePictureAsync({
       shutterSound: false,
@@ -154,21 +163,25 @@ export default function Index() {
     });
     if (photo?.uri) {
       setUri(photo.uri);
+      // Extract text from image. Returns an array where every element is a line.
       const text = await extractTextFromImage(photo.uri);
       console.log(text);
-
+      // Find the line containing the serial number.
       const snLine = text.find(
         (string) =>
           string.includes("SN") || snPrefixes.includes(string.slice(0, 3)),
       );
+      // Match the serial number out of the line (also checks if it is a valid serial number)
       const serialN = snLine?.match(
         /(5CG|5CD|CND|CNC|CZC|SCG|SCD|CNU|8CC|2CE).{7}/gm,
       )?.[0];
       if (serialN) {
+        // Sometimes a 5 gets read as an S. Because no HP Serial Number starts with an S, but (almost) always with a 5, change these around
         if (serialN[0] === "S")
           return setSerialNumber(`5${serialN.substring(1)}`);
         return setSerialNumber(serialN);
       } else {
+        // Show the error modal if the read serialnumber is invalid
         setErrorText("Could not read serial number");
         setSerialNumber(null);
         setUri(undefined);
@@ -231,32 +244,19 @@ export default function Index() {
             />
             <ProxsysOrangeButton
               onPress={async () => {
-                if (!customer) return; //TODO: Implement error message here
-                // Request from n8n (Proxsys goes n8n???)
-                // const response = await fetch(
-                //   "http://192.168.1.17:5678/webhook/1653088f-94d9-4919-b763-d5f66870c30a",
-                //   {
-                //     headers: {
-                //       customer,
-                //       serialNumber,
-                //       // Accestoken
-                //     },
-                //     signal: AbortSignal.timeout(3),
-                //   }
-                // )
-                //   .then((res) => res.json())
-                //   .catch((e) => console.error(e));
-                console.log("HELLO");
+                if (!customer) return; // TODO: Show error message.
+                // TODO: Retrieve bios password
+                // Write the retrieved BIOS Password to the esp32
                 device!
                   .writeCharacteristicWithoutResponseForService(
                     serviceUUID,
                     characteristicUUID,
-                    "Test",
+                    "Test", //FIXME:
                   )
                   .then(() => console.log("Send"))
                   .catch(console.error);
               }}
-              disabled={device == null}
+              disabled={device == null} // Disable the button when no Arduino has been connected
             >
               <Text style={{ color: "#fff", fontWeight: "bold" }}>Verzend</Text>
             </ProxsysOrangeButton>
