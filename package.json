@@ -11,7 +11,7 @@
     "lint": "expo lint"
   },
   "dependencies": {
-    "@clerk/expo": "^3.3.0",
+    "@clerk/expo": "3.3.1",
     "@expo/vector-icons": "^15.0.2",
     "ajv": "^8.17.1",
     "expo": "~56.0.8",
