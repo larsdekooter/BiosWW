@@ -1,7 +1,8 @@
+import ErrorModal from "@/components/ErrorModal";
+import ProxsysOrangeButton from "@/components/ProxsysOrangeButton";
 import { requestPermissions } from "@/useBLE";
 import { useAuth } from "@clerk/expo";
 import { AuthView, UserButton } from "@clerk/expo/native";
-import { FontAwesome } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { extractTextFromImage } from "expo-text-extractor";
 import { useEffect, useRef, useState } from "react";
@@ -10,41 +11,14 @@ import {
   Button,
   Image,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   Pressable,
-  PressableProps,
   Text,
   TextInput,
   View,
 } from "react-native";
 import { BleManager, Device } from "react-native-ble-plx";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-function ErrorModal({ text }: { text: string | null }) {
-  return (
-    <Modal animationType="slide" transparent visible={text != null}>
-      <View
-        style={{
-          bottom: 30,
-          backgroundColor: "#323332",
-          height: 50,
-          width: "90%",
-          alignSelf: "center",
-          position: "absolute",
-          justifyContent: "space-around",
-          flex: 1,
-          alignItems: "center",
-          borderRadius: 4,
-          flexDirection: "row",
-        }}
-      >
-        <FontAwesome name="exclamation-circle" size={20} color={"red"} />
-        <Text style={{ color: "#fff" }}>{text}</Text>
-      </View>
-    </Modal>
-  );
-}
 
 const serviceUUID = "180A";
 const characteristicUUID = "2A57";
@@ -61,26 +35,6 @@ const snPrefixes: string[] = [
   "2CE",
 ];
 
-function ProxsysOrangeButton(props: PressableProps) {
-  return (
-    <Pressable
-      {...props}
-      style={(state) => [
-        {
-          paddingHorizontal: 20,
-          paddingVertical: 10,
-          backgroundColor: "#FF7D00",
-          margin: 5,
-          borderRadius: 3,
-        },
-        typeof props.style === "function" ? props.style(state) : props.style,
-      ]}
-    >
-      {props.children}
-    </Pressable>
-  );
-}
-
 export default function Index() {
   // Request Bluetooth permissions to connect to Arduino ESP32 NANO
   requestPermissions();
@@ -92,7 +46,6 @@ export default function Index() {
   const [serialNumber, setSerialNumber] = useState<string | null>(null);
   const [customer, setCustomer] = useState<string | null>(null);
   const [device, setDevice] = useState<Device | null>();
-  const [isError, setIsError] = useState(false);
   // Check if user is signed in
   const { isSignedIn, isLoaded } = useAuth({ treatPendingAsSignedOut: false });
 
@@ -112,12 +65,14 @@ export default function Index() {
             setDevice(device);
             device.onDisconnected(() => {
               console.log("Disconnected");
+              setErrorText("Geen verbinding met dongle!");
             });
 
             await device
               .connect()
               .then((device) => device.discoverAllServicesAndCharacteristics())
               .then((device) => console.log("connected to device: ", device))
+              .then(() => setErrorText(null))
               .catch((error) => console.error("Connection error: ", error));
           }
         });
@@ -165,7 +120,6 @@ export default function Index() {
       setUri(photo.uri);
       // Extract text from image. Returns an array where every element is a line.
       const text = await extractTextFromImage(photo.uri);
-      console.log(text);
       // Find the line containing the serial number.
       const snLine = text.find(
         (string) =>
@@ -185,13 +139,14 @@ export default function Index() {
         setErrorText("Could not read serial number");
         setSerialNumber(null);
         setUri(undefined);
-        setTimeout(() => {
-          setErrorText(null);
-        }, 3000);
+        await wait(1500);
+        setErrorText(null);
       }
     }
   };
   const renderPicture = () => {
+    if (device == null && errorText == null)
+      setErrorText("Geen verbinding met dongle!");
     return (
       <KeyboardAvoidingView
         style={{
@@ -244,21 +199,36 @@ export default function Index() {
             />
             <ProxsysOrangeButton
               onPress={async () => {
-                if (!customer) return; // TODO: Show error message.
+                if (!customer) {
+                  setErrorText(null);
+                  setErrorText("Voer een klantcode in!");
+                  await wait(1500);
+                  setErrorText(null);
+                  return;
+                }
+
                 // TODO: Retrieve bios password
                 // Write the retrieved BIOS Password to the esp32
                 device!
                   .writeCharacteristicWithoutResponseForService(
                     serviceUUID,
                     characteristicUUID,
-                    "Test", //FIXME:
+                    /*FIXME:*/ "Test",
                   )
                   .then(() => console.log("Send"))
                   .catch(console.error);
               }}
               disabled={device == null} // Disable the button when no Arduino has been connected
             >
-              <Text style={{ color: "#fff", fontWeight: "bold" }}>Verzend</Text>
+              <Text
+                style={{
+                  color: device == null ? "#726f75" : "#fff",
+                  // color: "white",
+                  fontWeight: "bold",
+                }}
+              >
+                Verzend
+              </Text>
             </ProxsysOrangeButton>
           </>
         )}
@@ -334,8 +304,8 @@ export default function Index() {
   );
 }
 
-const wait = (duration: number) => {
+function wait(duration: number) {
   return new Promise((resolve, reject) => {
     setTimeout(resolve, duration);
   });
-};
+}
