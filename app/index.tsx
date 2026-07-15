@@ -1,3 +1,4 @@
+import Dropdown from "@/components/Dropdown";
 import ErrorModal from "@/components/ErrorModal";
 import ProxsysOrangeButton from "@/components/ProxsysOrangeButton";
 import { requestPermissions } from "@/useBLE";
@@ -48,6 +49,7 @@ export default function Index() {
   const [device, setDevice] = useState<Device | null>();
   // Check if user is signed in
   const { isSignedIn, isLoaded } = useAuth({ treatPendingAsSignedOut: false });
+  const [devices, setDevices] = useState<{ id?: string; name?: string }[]>([]);
 
   // Connect to the Arduino NANO ESP32
   useEffect(() => {
@@ -77,6 +79,14 @@ export default function Index() {
           }
         });
         return;
+      } else {
+        await wait(5000);
+        await bleManager.startDeviceScan(null, null, async (error, device) => {
+          if (error) return console.error("Scan error: ", error);
+
+          if (device?.name?.includes("BIOS"))
+            setDevices([...devices, { id: device?.id, name: device?.name }]);
+        });
       }
     })();
   }, []);
@@ -157,6 +167,15 @@ export default function Index() {
         }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
+        <Dropdown
+          data={[...devices, { id: "Test test test test", name: "test" }].map(
+            (d) => `${d.name} - ${d.id}`,
+          )}
+          renderItem={({ item }) => (
+            <Text style={{ color: "white" }}>{item}</Text>
+          )}
+        />
+
         <Text style={{ color: "#fff", paddingVertical: 5, fontWeight: "bold" }}>
           {serialNumber}
         </Text>
