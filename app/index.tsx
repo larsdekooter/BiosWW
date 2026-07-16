@@ -57,27 +57,33 @@ export default function Index() {
       const bleManager = new BleManager();
       if (!device?.isConnected()) {
         console.log("not connected");
-        await bleManager.startDeviceScan(null, null, async (error, device) => {
-          if (error) {
-            console.error("Scan Error: ", error);
-            return;
-          }
-          if (device?.name?.includes("BIOS")) {
-            bleManager.stopDeviceScan();
-            setDevice(device);
-            device.onDisconnected(() => {
-              console.log("Disconnected");
-              setErrorText("Geen verbinding met dongle!");
-            });
+        await bleManager.startDeviceScan(
+          ["180A"],
+          null,
+          async (error, device) => {
+            if (error) {
+              console.error("Scan Error: ", error);
+              return;
+            }
+            if (device?.name?.includes("BIOS")) {
+              bleManager.stopDeviceScan();
+              setDevice(device);
+              device.onDisconnected(() => {
+                console.log("Disconnected");
+                setErrorText("Geen verbinding met dongle!");
+              });
 
-            await device
-              .connect()
-              .then((device) => device.discoverAllServicesAndCharacteristics())
-              .then((device) => console.log("connected to device: ", device))
-              .then(() => setErrorText(null))
-              .catch((error) => console.error("Connection error: ", error));
-          }
-        });
+              await device
+                .connect()
+                .then((device) =>
+                  device.discoverAllServicesAndCharacteristics(),
+                )
+                .then((device) => console.log("connected to device: ", device))
+                .then(() => setErrorText(null))
+                .catch((error) => console.error("Connection error: ", error));
+            }
+          },
+        );
         return;
       } else {
         await wait(5000);

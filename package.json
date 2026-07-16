@@ -13,6 +13,7 @@
   "dependencies": {
     "@clerk/expo": "^3.7.4",
     "@expo/vector-icons": "^15.0.2",
+    "@react-native-vector-icons/fontawesome": "^13.1.2",
     "ajv": "^8.17.1",
     "expo": "^57.0.0",
     "expo-auth-session": "~57.0.2",

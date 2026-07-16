@@ -1,3 +1,4 @@
+import FontAwesome from "@react-native-vector-icons/fontawesome";
 import { ReactNode, useState } from "react";
 import {
   Animated,
@@ -58,7 +59,7 @@ export default function Dropdown<T extends ReactNode>({
 
     Animated.parallel([
       Animated.timing(rotateAnim, {
-        toValue: isOpened ? 1 : 0,
+        toValue: isOpened ? 0 : 1,
         duration: 200,
         useNativeDriver: true,
       }),
@@ -106,7 +107,7 @@ export default function Dropdown<T extends ReactNode>({
             justifyContent: "center",
           }}
         >
-          <Text style={{ color: "#fff" }}>^</Text>
+          <FontAwesome name="chevron-down" size={15} color={"#fff"} />
         </Animated.View>
       </View>
 

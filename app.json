@@ -55,7 +55,8 @@
       "expo-secure-store",
       "expo-image",
       "@clerk/expo",
-      "expo-status-bar"
+      "expo-status-bar",
+      "@react-native-vector-icons/fontawesome"
     ],
     "experiments": {
       "typedRoutes": true
