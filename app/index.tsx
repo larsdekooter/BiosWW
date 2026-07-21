@@ -49,53 +49,68 @@ export default function Index() {
   const [device, setDevice] = useState<Device | null>();
   // Check if user is signed in
   const { isSignedIn, isLoaded } = useAuth({ treatPendingAsSignedOut: false });
-  const [devices, setDevices] = useState<{ id?: string; name?: string }[]>([]);
+  const [devices, setDevices] = useState<Device[]>([]);
+
+  function findNanos(bleManager: BleManager) {
+    bleManager.startDeviceScan(
+      ["180A"],
+      { allowDuplicates: false },
+      (error, discoverdDevice) => {
+        if (error || !discoverdDevice)
+          return console.error(
+            "[BLE Scan Error]: ",
+            error,
+            "\n",
+            discoverdDevice,
+          );
+        if (!discoverdDevice.name?.includes("BIOS")) return;
+
+        setDevices((prevDevices) => {
+          const exists = prevDevices.some(
+            (dev) => dev.id === discoverdDevice.id,
+          );
+          if (exists) return prevDevices;
+          return [...prevDevices, discoverdDevice];
+        });
+      },
+    );
+    setTimeout(() => {
+      bleManager.stopDeviceScan();
+      console.log("Found ", devices.length, " devices");
+    }, 10000);
+    return devices;
+  }
 
   // Connect to the Arduino NANO ESP32
+  const bleManager = new BleManager();
   useEffect(() => {
     (async () => {
-      const bleManager = new BleManager();
       if (!device?.isConnected()) {
         console.log("not connected");
-        await bleManager.startDeviceScan(
-          ["180A"],
-          null,
-          async (error, device) => {
-            if (error) {
-              console.error("Scan Error: ", error);
-              return;
-            }
-            if (device?.name?.includes("BIOS")) {
-              bleManager.stopDeviceScan();
-              setDevice(device);
-              device.onDisconnected(() => {
-                console.log("Disconnected");
-                setErrorText("Geen verbinding met dongle!");
-              });
-
-              await device
-                .connect()
-                .then((device) =>
-                  device.discoverAllServicesAndCharacteristics(),
-                )
-                .then((device) => console.log("connected to device: ", device))
-                .then(() => setErrorText(null))
-                .catch((error) => console.error("Connection error: ", error));
-            }
-          },
-        );
-        return;
-      } else {
-        await wait(5000);
-        await bleManager.startDeviceScan(null, null, async (error, device) => {
-          if (error) return console.error("Scan error: ", error);
-
-          if (device?.name?.includes("BIOS"))
-            setDevices([...devices, { id: device?.id, name: device?.name }]);
-        });
+        findNanos(bleManager);
       }
     })();
   }, []);
+
+  useEffect(() => {
+    if (devices.length === 0 || device) return;
+    const dev = devices[0];
+    setDevice(dev);
+    dev.onDisconnected(() => {
+      console.log("Disconnected from ", dev.id);
+      setErrorText("Geen verbinding");
+      setDevice(null);
+    });
+
+    dev
+      .connect()
+      .then((d) => d.discoverAllServicesAndCharacteristics())
+      .then((d) => {
+        console.log("Connected to ", dev);
+        setErrorText(null);
+      })
+      .catch(console.error);
+  }, [devices]);
 
   // When Clerk is still loading show a spinner
   if (!isLoaded) {
@@ -174,12 +189,85 @@ export default function Index() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <Dropdown
-          data={[...devices, { id: "Test test test test", name: "test" }].map(
-            (d) => `${d.name} - ${d.id}`,
+          data={devices.map(
+            (d) => `${d.name} - ${d.id} - ${d.id === device?.id}`,
+          )}
+          renderText={(t) => (
+            <View style={{ flexDirection: "row" }}>
+              <Text
+                style={{
+                  color: t?.toString().includes("true")
+                    ? "lightgreen"
+                    : "white",
+                  textAlign: "left",
+                  flex: 1 / 2,
+                }}
+              >
+                {t?.toString()?.split(" - ")?.[0]}
+              </Text>
+              <Text
+                style={{
+                  color: t?.toString().includes("true")
+                    ? "lightgreen"
+                    : "white",
+                  textAlign: "right",
+                  flex: 1 / 2,
+                }}
+              >
+                {t?.toString()?.split(" - ")?.[1]}
+              </Text>
+            </View>
           )}
           renderItem={({ item }) => (
-            <Text style={{ color: "white" }}>{item}</Text>
+            <View
+              style={{
+                marginVertical: 2,
+                paddingVertical: 5,
+                paddingHorizontal: 5,
+                borderRadius: 8,
+                borderColor: item.includes("true") ? "green" : "gray",
+                borderWidth: 1,
+                flexDirection: "row",
+                flex: 1,
+              }}
+            >
+              <Text
+                style={{
+                  color: item.includes("true") ? "lightgreen" : "white",
+                  textAlign: "left",
+                  flex: 1 / 2,
+                }}
+              >
+                {item.split(" - ")[0]}
+              </Text>
+              <Text
+                style={{
+                  color: item.includes("true") ? "lightgreen" : "white",
+                  textAlign: "right",
+                  flex: 1 / 2,
+                }}
+              >
+                {item.split(" - ")[1]}
+              </Text>
+            </View>
           )}
+          onChoose={async (item) => {
+            if (item.includes("true")) return;
+            await device?.cancelConnection();
+            setDevice(null);
+            const dev = devices.find(
+              (d) => d.id === item.split(" - ")[1].trim(),
+            );
+            if (!dev) return; //FIXME:
+            setDevice(dev);
+            await dev
+              .connect()
+              .then((d) => {
+                console.log("Connected to device: ", d);
+                setErrorText(null);
+              })
+              .catch(console.error);
+          }}
         />
 
         <Text style={{ color: "#fff", paddingVertical: 5, fontWeight: "bold" }}>

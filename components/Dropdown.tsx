@@ -5,8 +5,6 @@ import {
   GestureResponderEvent,
   Pressable,
   StyleProp,
-  Text,
-  TextStyle,
   View,
   ViewStyle,
 } from "react-native";
@@ -23,7 +21,7 @@ interface DropdownProps<T extends ReactNode> {
     array: T[];
   }) => ReactNode;
   shouldLoad?: boolean;
-  onPress?:
+  onChoose?:
     | null
     | ((item: T, event: GestureResponderEvent) => void)
     | undefined;
@@ -31,18 +29,20 @@ interface DropdownProps<T extends ReactNode> {
   closeWhenSelected?: boolean;
   dropdownStyle?: StyleProp<ViewStyle>;
   maxHeight?: number;
-  textStyle?: StyleProp<TextStyle>;
+  textStyle?: StyleProp<ViewStyle>;
+  renderText: (text: ReactNode) => ReactNode;
 }
 
 export default function Dropdown<T extends ReactNode>({
   data,
   renderItem,
-  onPress,
+  onChoose,
   style,
   closeWhenSelected = false,
   dropdownStyle,
   maxHeight = 1000,
   textStyle,
+  renderText,
 }: DropdownProps<T>) {
   const [isOpened, setOpened] = useState(false);
   const rotateAnim = useState(new Animated.Value(0))[0];
@@ -94,9 +94,9 @@ export default function Dropdown<T extends ReactNode>({
           alignItems: "center",
         }}
       >
-        <Text style={[{ width: "92%", color: "#fff" }, textStyle]}>
-          {selected}
-        </Text>
+        <View style={[{ width: "92%" }, textStyle]}>
+          {renderText(selected)}
+        </View>
         <Animated.View
           style={{
             transform: [{ rotate }],
@@ -133,7 +133,7 @@ export default function Dropdown<T extends ReactNode>({
             key={index}
             onPress={(event) => {
               setSelected(item);
-              onPress ? onPress(item, event) : null;
+              onChoose ? onChoose(item, event) : null;
               closeWhenSelected ? toggleExpand() : null;
             }}
           >
